@@ -17,6 +17,7 @@ const wrapButton = document.getElementById("wrapButton");
 const logoutButton = document.getElementById("logoutButton");
 const panelToggle = document.getElementById("panelToggle");
 const panelBackdrop = document.getElementById("panelBackdrop");
+const railToggle = document.getElementById("railToggle");
 
 let socket = null;
 let reconnectTimer = null;
@@ -24,6 +25,15 @@ let activeStatus = null;
 let autoScroll = true;
 let commandHistory = [];
 let historyCursor = -1;
+
+try {
+    if (localStorage.getItem("railCollapsed") === "true") {
+        appShell.dataset.railCollapsed = "true";
+        railToggle.textContent = "<";
+        railToggle.setAttribute("aria-expanded", "false");
+        railToggle.setAttribute("aria-label", "Expand status panel");
+    }
+} catch { /* storage unavailable */ }
 
 boot();
 
@@ -70,6 +80,14 @@ function closePanel() {
     if (isCompactLayout()) {
         setPanelOpen(false);
     }
+}
+
+function setRailCollapsed(isCollapsed) {
+    appShell.dataset.railCollapsed = String(isCollapsed);
+    railToggle.textContent = isCollapsed ? "<" : ">";
+    railToggle.setAttribute("aria-label", isCollapsed ? "Expand status panel" : "Collapse status panel");
+    railToggle.setAttribute("aria-expanded", String(!isCollapsed));
+    try { localStorage.setItem("railCollapsed", String(isCollapsed)); } catch { /* storage unavailable */ }
 }
 
 function connectSocket() {
@@ -276,6 +294,10 @@ logoutButton.addEventListener("click", async () => {
 panelToggle.addEventListener("click", () => {
     const isOpen = appShell.dataset.panelOpen === "true";
     setPanelOpen(!isOpen);
+});
+
+railToggle.addEventListener("click", () => {
+    setRailCollapsed(appShell.dataset.railCollapsed !== "true");
 });
 
 panelBackdrop.addEventListener("click", () => {

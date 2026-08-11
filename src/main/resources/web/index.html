@@ -58,40 +58,43 @@
             </section>
 
             <aside id="statusRail" class="status-rail">
-                <section class="rail-card">
-                    <p class="eyebrow">Connection</p>
-                    <div class="rail-row">
-                        <span class="rail-label">Endpoint</span>
-                        <span id="endpointValue" class="rail-value">-</span>
-                    </div>
-                    <div class="rail-row">
-                        <span class="rail-label">Server</span>
-                        <span id="serverValue" class="rail-value">-</span>
-                    </div>
-                    <div class="rail-row">
-                        <span class="rail-label">Session</span>
-                        <span id="sessionValue" class="rail-value">-</span>
-                    </div>
-                    <div class="rail-row">
-                        <span class="rail-label">Buffered</span>
-                        <span id="bufferValue" class="rail-value">-</span>
-                    </div>
-                </section>
+                <button id="railToggle" class="rail-collapse-btn" type="button" aria-label="Collapse status panel" aria-expanded="true">&gt;</button>
+                <div class="rail-content">
+                    <section class="rail-card">
+                        <p class="eyebrow">Connection</p>
+                        <div class="rail-row">
+                            <span class="rail-label">Endpoint</span>
+                            <span id="endpointValue" class="rail-value">-</span>
+                        </div>
+                        <div class="rail-row">
+                            <span class="rail-label">Server</span>
+                            <span id="serverValue" class="rail-value">-</span>
+                        </div>
+                        <div class="rail-row">
+                            <span class="rail-label">Session</span>
+                            <span id="sessionValue" class="rail-value">-</span>
+                        </div>
+                        <div class="rail-row">
+                            <span class="rail-label">Buffered</span>
+                            <span id="bufferValue" class="rail-value">-</span>
+                        </div>
+                    </section>
 
-                <section class="rail-card">
-                    <p class="eyebrow">Actions</p>
-                    <div class="rail-actions">
-                        <button id="reconnectButton" class="secondary-button" type="button">Reconnect</button>
-                        <button id="clearButton" class="secondary-button" type="button">Clear Local View</button>
-                        <button id="wrapButton" class="secondary-button" type="button">Toggle Wrap</button>
-                        <button id="logoutButton" class="secondary-button" type="button">Logout</button>
-                    </div>
-                </section>
+                    <section class="rail-card">
+                        <p class="eyebrow">Actions</p>
+                        <div class="rail-actions">
+                            <button id="reconnectButton" class="secondary-button" type="button">Reconnect</button>
+                            <button id="clearButton" class="secondary-button" type="button">Clear Local View</button>
+                            <button id="wrapButton" class="secondary-button" type="button">Toggle Wrap</button>
+                            <button id="logoutButton" class="secondary-button" type="button">Logout</button>
+                        </div>
+                    </section>
 
-                <section class="rail-card rail-note">
-                    <p class="eyebrow">Input</p>
-                    <p>Enter sends a command. Shift+Enter keeps a multiline paste intact. Use Up and Down to recall command history.</p>
-                </section>
+                    <section class="rail-card rail-note">
+                        <p class="eyebrow">Input</p>
+                        <p>Enter sends a command. Shift+Enter keeps a multiline paste intact. Use Up and Down to recall command history.</p>
+                    </section>
+                </div>
             </aside>
         </main>
     </div>

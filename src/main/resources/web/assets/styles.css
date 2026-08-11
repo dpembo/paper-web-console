@@ -237,7 +237,7 @@ body.console-page {
     grid-template-columns: auto auto 1fr auto;
     gap: 0.8rem;
     align-items: start;
-    padding: 0.42rem 1.5rem;
+    padding: 1.5rem;
     border-left: 2px dashed transparent;
     color: var(--text-soft);
     animation: fade-in 160ms ease;
@@ -401,12 +401,14 @@ body.console-page {
 }
 
 .console-output::-webkit-scrollbar,
-.status-rail::-webkit-scrollbar {
+.status-rail::-webkit-scrollbar,
+.rail-content::-webkit-scrollbar {
     width: 10px;
 }
 
 .console-output::-webkit-scrollbar-thumb,
-.status-rail::-webkit-scrollbar-thumb {
+.status-rail::-webkit-scrollbar-thumb,
+.rail-content::-webkit-scrollbar-thumb {
     background: #49463f;
     border: 2px solid transparent;
     border-radius: 999px;
@@ -414,8 +416,18 @@ body.console-page {
 }
 
 .console-output::-webkit-scrollbar-track,
-.status-rail::-webkit-scrollbar-track {
+.status-rail::-webkit-scrollbar-track,
+.rail-content::-webkit-scrollbar-track {
     background: transparent;
+}
+
+.rail-content {
+    display: flex;
+    flex-direction: column;
+}
+
+.rail-collapse-btn {
+    display: none;
 }
 
 .rail-note p:last-child {
@@ -801,5 +813,55 @@ body.console-page {
 
     .console-line:hover {
         background: transparent;
+    }
+}
+
+@media (min-width: 1041px) {
+    .terminal-layout {
+        transition: grid-template-columns 200ms ease;
+    }
+
+    .status-rail {
+        flex-direction: row;
+        overflow: hidden;
+    }
+
+    .rail-content {
+        flex: 1;
+        min-width: 0;
+        overflow: auto;
+        overscroll-behavior: contain;
+    }
+
+    .rail-collapse-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        width: 32px;
+        min-width: 32px;
+        align-self: stretch;
+        border: 0;
+        border-right: 1px dashed rgba(229, 138, 106, 0.45);
+        background: transparent;
+        color: var(--text-muted);
+        cursor: pointer;
+        font: inherit;
+        font-size: 0.9rem;
+        padding: 0;
+        transition: color 140ms ease, background 140ms ease;
+    }
+
+    .rail-collapse-btn:hover {
+        color: var(--accent);
+        background: rgba(229, 138, 106, 0.06);
+    }
+
+    .app-shell[data-rail-collapsed="true"] .terminal-layout {
+        grid-template-columns: minmax(0, 1fr) 32px;
+    }
+
+    .app-shell[data-rail-collapsed="true"] .rail-content {
+        display: none;
     }
 }

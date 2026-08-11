@@ -237,7 +237,7 @@ body.console-page {
     grid-template-columns: auto auto 1fr auto;
     gap: 0.8rem;
     align-items: start;
-    padding: 1.5rem;
+    padding: 0rem 1.5rem;
     border-left: 2px dashed transparent;
     color: var(--text-soft);
     animation: fade-in 160ms ease;

@@ -2,10 +2,6 @@
 
 Paper Web Console is a PaperMC plugin that exposes the Minecraft server console in a browser on a dedicated HTTP port.
 
-<img width="1920" height="870" alt="image" src="https://github.com/user-attachments/assets/2c438b25-224c-49d3-94fa-af430e3c1445" />
-
-<img width="1920" height="870" alt="image" src="https://github.com/user-attachments/assets/989e2a3d-913d-4ba3-81ea-9114ddfe973f" />
-
 It is intentionally narrow:
 
 - stream recent and live console output from `logs/latest.log`
@@ -15,13 +11,14 @@ It is intentionally narrow:
 
 ## Stack
 
-- Java 21
-- Gradle Kotlin DSL
+- Java 51
+- Gradle Kotlin DSL (Gradle 9.1+, see [Build](#build))
 - Paper API `1.21.x`
 - Javalin
 - Gson
 - JUnit 5
 - Plain HTML, CSS, and JavaScript
+- Shadow plugin: `com.gradleup.shadow` (maintained fork; see [Shadow Plugin Migration](#shadow-plugin-migration))
 
 ## Features
 
@@ -37,72 +34,96 @@ It is intentionally narrow:
 
 ## Requirements
 
-- Java 21 JDK
+- Java 21 JDK **to compile the plugin** (`options.release = 21` is enforced regardless of host JVM)
+- A JVM in the **17–26** range **to run Gradle itself** — this can be a different JVM than the one used for compilation (see below)
 - a Paper server compatible with API version `1.21`
-- Gradle 8.x if you are not using the wrapper
+- Gradle 9.1 or later if you are not using the wrapper (older Gradle cannot run under a Java 25+ host JVM and will fail with `IllegalArgumentException` on the version string)
 
 Verify that you have a full JDK, not just a Java runtime:
 
-```bash
+```
 java -version
 javac -version
 ```
 
-Both should report Java 21.
+Both should report Java 21 if that's the JVM you intend to build with. If your default system JVM is newer (e.g. Java 25), that's fine for *running* Gradle 9.1+, but see [Build](#build) for keeping compiled output on Java 21.
 
 ## Build
 
 From the repository root:
 
-```bash
+```
 ./gradlew test
 ./gradlew shadowJar
 ```
 
 The shaded plugin jar is written to:
 
-```text
+```
 build/libs/paper-web-console-<version>.jar
 ```
 
-This project uses the Shadow plugin and produces a single plugin jar with runtime dependencies bundled inside it.
+This project uses the Shadow plugin (`com.gradleup.shadow`) and produces a single plugin jar with runtime dependencies bundled inside it.
 
-## Release Automation
+### Gradle wrapper version
 
-Pushes to `main` now create a GitHub release automatically through [.github/workflows/release.yml](.github/workflows/release.yml).
+[#gradle-wrapper-version](#gradle-wrapper-version)
 
-The workflow behavior is:
+The wrapper is pinned to Gradle 9.1+ to support running under modern JDKs (Java 25 and later) as the host JVM. If you need to bump it further:
 
-- it runs on every push to `main`
-- it finds the latest semantic version tag in the repository
-- it bumps the minor version and resets patch to `0`
-- it builds `build/libs/paper-web-console-<version>.jar`
-- it publishes a GitHub release with generated notes and uploads that jar
+```
+gradle wrapper --gradle-version 9.3.0
+./gradlew --version
+```
 
-Examples:
+This only changes which JVM can *run* Gradle — it does not change the Java 21 bytecode target used for compilation (`options.release = 21` in `build.gradle.kts`).
 
-- if the latest semver tag is `v0.1.0`, the next push to `main` releases `v0.2.0`
-- if the latest semver tag is `v0.2.0`, the next push to `main` releases `v0.3.0`
+If you're on an older checkout and see a build failure like:
 
-The current non-semver tag `release` is ignored by the workflow, so the next automated release will start from `0.2.0` unless you create a semantic version tag first.
+```
+java.lang.IllegalArgumentException: 25.0.4
+    at org.jetbrains.kotlin.com.intellij.util.lang.JavaVersion.parse(...)
+```
 
-If you rerun the workflow for a commit that already has a semver tag, it will detect that and skip creating a second release.
+that means Gradle itself is too old to run under your current host JVM. Bump the wrapper as above, or alternatively point `JAVA_HOME` at a Java 21 JDK before building (see [If the Gradle wrapper is incomplete](#if-the-gradle-wrapper-is-incomplete) for JAVA_HOME instructions).
+
+### Shadow Plugin Migration
+
+[#shadow-plugin-migration](#shadow-plugin-migration)
+
+This project uses `com.gradleup.shadow` rather than the legacy `com.github.johnrengelman.shadow` plugin. The legacy plugin relies on a file-permission API that Gradle removed in 9.0, and fails with:
+
+```
+groovy.lang.MissingPropertyException: No such property: mode for class: ...StubbedFileCopyDetails
+```
+
+If you fork or modify this project's `build.gradle.kts`, keep the plugin block as:
+
+```kotlin
+plugins {
+    id("com.gradleup.shadow") version "9.2.2" // check plugins.gradle.org for current latest
+}
+```
+
+The task name (`shadowJar`) and most configuration are unchanged from the legacy plugin. If you have custom `ShadowJar` task configuration beyond the defaults, double check it against the [Shadow 9.x changelog](https://gradleup.com/shadow/changes/), as some APIs were renamed in the Kotlin rewrite.
 
 ### If the Gradle wrapper is incomplete
+
+[#if-the-gradle-wrapper-is-incomplete](#if-the-gradle-wrapper-is-incomplete)
 
 Some checkouts may be missing `gradle-wrapper.jar`. If that happens, use a modern local Gradle installation and regenerate the wrapper or build directly with that Gradle version.
 
 Example:
 
-```bash
+```
 gradle --version
-gradle wrapper --gradle-version 8.10.2
+gradle wrapper --gradle-version 9.3.0
 ./gradlew shadowJar
 ```
 
 If you only need an artifact immediately:
 
-```bash
+```
 gradle shadowJar
 ```
 
@@ -110,7 +131,7 @@ Use Java 21 for all compile and test work. The build is configured with `options
 
 If Gradle reports that it cannot find a Java 21 toolchain, your shell is likely using a JRE or the wrong `JAVA_HOME`. Point `JAVA_HOME` at a Java 21 JDK and retry:
 
-```bash
+```
 export JAVA_HOME=/path/to/jdk-21
 export PATH="$JAVA_HOME/bin:$PATH"
 ./gradlew test
@@ -119,7 +140,7 @@ export PATH="$JAVA_HOME/bin:$PATH"
 
 On Linux, if `java -version` works but Gradle still cannot find the toolchain, resolve the real JDK path and export that exact directory:
 
-```bash
+```
 readlink -f "$(which java)"
 # example output: /usr/lib/jvm/java-21-openjdk-amd64/bin/java
 
@@ -131,6 +152,24 @@ export PATH="$JAVA_HOME/bin:$PATH"
 
 This repository also tells Gradle to look at `JAVA_HOME` explicitly through `gradle.properties`, so once `JAVA_HOME` points at a Java 21 JDK, the wrapper should use it.
 
+## Versioning
+
+[#versioning](#versioning)
+
+There are two places a version number lives:
+
+- **`build.gradle.kts`** — the Gradle project `version`, which determines the built jar's filename: `paper-web-console-<version>.jar`.
+- **`src/main/resources/plugin.yml`** — the version Paper reports at runtime. If this uses a token/placeholder tied to the Gradle project version, it updates automatically via `processResources`; otherwise it must be edited separately.
+
+For a one-off local build, editing `build.gradle.kts` is enough.
+
+Note that pushes to `main` trigger the [release automation workflow](#release-automation), which computes the next release version from the latest **semver git tag**, not from the `version` field in `build.gradle.kts`. To control what the next automated release is tagged, push a semver tag directly:
+
+```
+git tag v1.0.0
+git push --tags
+```
+
 ## Install On A Paper Server
 
 1. Build the shaded jar.
@@ -140,13 +179,13 @@ This repository also tells Gradle to look at `JAVA_HOME` explicitly through `gra
 
 On successful startup the plugin logs a line like:
 
-```text
+```
 [PaperWebConsole] Web console listening on http://0.0.0.0:28765
 ```
 
 On first run it also logs a setup URL like:
 
-```text
+```
 http://0.0.0.0:28765/setup?token=...
 ```
 
@@ -156,7 +195,7 @@ Open that URL once to create the shared admin password.
 
 By default the web server binds to:
 
-```text
+```
 0.0.0.0:28765
 ```
 
@@ -168,13 +207,13 @@ That means:
 
 If you want LAN access, edit the generated server config at:
 
-```text
+```
 plugins/PaperWebConsole/config.yml
 ```
 
 Example:
 
-```yml
+```
 bindAddress: "0.0.0.0"
 port: 28765
 ```
@@ -201,13 +240,13 @@ Treat reverse-proxy support, public exposure, and HTTPS termination as security-
 
 The plugin registers:
 
-```text
+```
 /webconsole <status|reload|reset-auth>
 ```
 
 Permission:
 
-```text
+```
 webconsole.admin
 ```
 
@@ -232,13 +271,11 @@ Default config keys:
 - `ui.maxBufferedLines`
 - `ui.defaultWrapMode`
 
-Default resource file:
-
-- [src/main/resources/config.yml](/home/dimitarbez/Dev/mc-web-cli/src/main/resources/config.yml)
+Default resource file: `src/main/resources/config.yml`
 
 The generated runtime config lives under your server's plugin data folder:
 
-```text
+```
 plugins/PaperWebConsole/config.yml
 ```
 
@@ -299,13 +336,32 @@ Current unit tests cover:
 
 Run them with:
 
-```bash
+```
 ./gradlew test
 ```
 
+## Release Automation
+
+Pushes to `main` create a GitHub release automatically through `.github/workflows/release.yml`.
+
+The workflow behavior is:
+
+- it runs on every push to `main`
+- it finds the latest semantic version tag in the repository
+- it bumps the minor version and resets patch to `0`
+- it builds `build/libs/paper-web-console-<version>.jar`
+- it publishes a GitHub release with generated notes and uploads that jar
+
+Examples:
+
+- if the latest semver tag is `v0.1.0`, the next push to `main` releases `v0.2.0`
+- if the latest semver tag is `v0.2.0`, the next push to `main` releases `v0.3.0`
+
+If you rerun the workflow for a commit that already has a semver tag, it will detect that and skip creating a second release.
+
 ## Repository Layout
 
-```text
+```
 build.gradle.kts                         Build configuration and dependencies
 settings.gradle.kts                      Gradle project name and plugin management
 src/main/java/dev/dimo/paperwebconsole   Plugin source

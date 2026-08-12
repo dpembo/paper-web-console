@@ -20,6 +20,8 @@ import io.javalin.websocket.WsMessageContext;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
@@ -70,6 +72,8 @@ public final class WebConsoleServer {
             config.routes.get("/", this::handleIndexPage);
             config.routes.get("/login", this::handleLoginPage);
             config.routes.get("/setup", this::handleSetupPage);
+            config.routes.get("/assets/styles.css", this::handleStyles);
+            config.routes.get("/brand/logo", this::handleBrandLogo);
             config.routes.get("/api/status", this::handleStatus);
             config.routes.post("/api/auth/login", this::handleLogin);
             config.routes.post("/api/auth/logout", this::handleLogout);
@@ -151,6 +155,58 @@ public final class WebConsoleServer {
         webSocketClients.clear();
     }
 
+    private void handleStyles(Context ctx) {
+        String filename = configuration.ui().customCssFile();
+        if (filename != null) {
+            try {
+                Path dataFolder = plugin.getDataFolder().toPath().toAbsolutePath().normalize();
+                Path cssPath = dataFolder.resolve(filename).normalize();
+                if (cssPath.startsWith(dataFolder) && Files.isRegularFile(cssPath)) {
+                    ctx.contentType("text/css").result(Files.readAllBytes(cssPath));
+                    return;
+                }
+                plugin.getLogger().warning("Custom CSS file '" + filename + "' not found; serving default styles.");
+            } catch (IOException exception) {
+                plugin.getLogger().log(Level.WARNING, "Could not read custom CSS file; serving default styles.", exception);
+            }
+        }
+        ctx.contentType("text/css").result(readResource("/web/assets/styles-default.css"));
+    }
+
+    private void handleBrandLogo(Context ctx) {
+        String filename = configuration.ui().brandLogoFile();
+        if (filename == null) {
+            ctx.status(HttpStatus.NOT_FOUND).result("");
+            return;
+        }
+        try {
+            Path dataFolder = plugin.getDataFolder().toPath().toAbsolutePath().normalize();
+            Path logoPath = dataFolder.resolve(filename).normalize();
+            if (!logoPath.startsWith(dataFolder)) {
+                ctx.status(HttpStatus.FORBIDDEN).result("");
+                return;
+            }
+            if (!Files.isRegularFile(logoPath)) {
+                ctx.status(HttpStatus.NOT_FOUND).result("");
+                return;
+            }
+            ctx.contentType(logoContentType(filename)).result(Files.readAllBytes(logoPath));
+        } catch (IOException exception) {
+            plugin.getLogger().log(Level.WARNING, "Could not read brand logo file.", exception);
+            ctx.status(HttpStatus.INTERNAL_SERVER_ERROR).result("");
+        }
+    }
+
+    private static String logoContentType(String filename) {
+        String lower = filename.toLowerCase(java.util.Locale.ROOT);
+        if (lower.endsWith(".png")) return "image/png";
+        if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
+        if (lower.endsWith(".gif")) return "image/gif";
+        if (lower.endsWith(".svg")) return "image/svg+xml";
+        if (lower.endsWith(".webp")) return "image/webp";
+        return "application/octet-stream";
+    }
+
     private void handleIndexPage(Context ctx) {
         if (!authManager.isConfigured()) {
             ctx.redirect("/setup");
@@ -207,7 +263,10 @@ public final class WebConsoleServer {
             new UiPayload(
                 configuration.ui().showTimestamps(),
                 configuration.ui().defaultWrapMode(),
-                configuration.ui().maxBufferedLines()
+                configuration.ui().maxBufferedLines(),
+                configuration.ui().brandLogoFile() != null ? "/brand/logo" : null,
+                configuration.ui().brandEyebrow(),
+                configuration.ui().brandTitle()
             )
         ));
     }
@@ -295,7 +354,7 @@ public final class WebConsoleServer {
     }
 
     private void applySecurityHeaders(Context ctx) {
-        ctx.header("Cache-Control", ctx.path().startsWith("/assets/") ? "public, max-age=86400" : "no-store");
+        ctx.header("Cache-Control", ctx.path().startsWith("/assets/") || ctx.path().startsWith("/brand/") ? "public, max-age=86400" : "no-store");
         ctx.header("X-Content-Type-Options", "nosniff");
         ctx.header("X-Frame-Options", "DENY");
         ctx.header("Referrer-Policy", "same-origin");
@@ -377,7 +436,7 @@ public final class WebConsoleServer {
     private record BasicResponse(boolean ok, String message) {
     }
 
-    private record UiPayload(boolean showTimestamps, boolean defaultWrapMode, int maxBufferedLines) {
+    private record UiPayload(boolean showTimestamps, boolean defaultWrapMode, int maxBufferedLines, String brandLogoUrl, String brandEyebrow, String brandTitle) {
     }
 
     private record StatusResponse(

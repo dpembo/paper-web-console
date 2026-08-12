@@ -17,6 +17,12 @@ async function boot() {
             window.location.replace("/");
             return;
         }
+        if (status.ui.brandLogoUrl) {
+            document.querySelector(".brand-mark").src = status.ui.brandLogoUrl;
+        }
+        if (status.ui.brandEyebrow) {
+            document.querySelector(".auth-copy .eyebrow").textContent = status.ui.brandEyebrow;
+        }
         statusNode.textContent = `${status.serverName} ${status.minecraftVersion} is waiting for authentication.`;
     } catch (error) {
         statusNode.textContent = error.message;

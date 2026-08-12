@@ -64,6 +64,15 @@ function hydrateStatus(status) {
     serverValue.textContent = `${status.serverName} ${status.minecraftVersion}`;
     sessionValue.textContent = formatRelativeTime(status.sessionExpiresAtEpochMillis);
     bufferValue.textContent = `${status.ui.maxBufferedLines} lines`;
+    if (status.ui.brandLogoUrl) {
+        document.querySelector(".brand-mark").src = status.ui.brandLogoUrl;
+    }
+    if (status.ui.brandEyebrow) {
+        document.querySelector(".terminal-header .eyebrow").textContent = status.ui.brandEyebrow;
+    }
+    if (status.ui.brandTitle) {
+        document.querySelector(".terminal-header h1").textContent = status.ui.brandTitle;
+    }
 }
 
 function isCompactLayout() {

@@ -16,3 +16,8 @@ ui:
   showTimestamps: true
   maxBufferedLines: 2000
   defaultWrapMode: true
+  # Optional branding overrides. Leave blank to use the built-in defaults.
+  # brandLogoFile: logo.png   # Place the image file in this plugin's data folder.
+  # brandEyebrow: ""
+  # brandTitle: ""
+  # customCssFile: custom.css  # Place the .css file in this plugin's data folder.
